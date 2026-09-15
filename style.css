@@ -408,7 +408,7 @@ p {
     align-items: center;
     color: var(--white);
     background:
-        url("image.com/SCHOOL\ LOGO.png")
+        url("images/SCHOOL\ LOGO.png")
         center / cover no-repeat;
     overflow: hidden;
 }
