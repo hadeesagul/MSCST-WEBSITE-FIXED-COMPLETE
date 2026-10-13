@@ -884,11 +884,7 @@ if (admissionForm) {
             if (submitButton) {
                 submitButton.disabled = false;
                 submitButton.innerHTML = originalText;
-            }
-        }
-    });
-}
-
+      
                 }
             });
         }
