@@ -880,15 +880,15 @@ if (admissionForm) {
                 "error"
             );
 
+       
         } finally {
             if (submitButton) {
                 submitButton.disabled = false;
                 submitButton.innerHTML = originalText;
-      
-                }
-            });
+            }
         }
-
+    });
+}
 
         /* =====================================================
            BACK TO TOP
