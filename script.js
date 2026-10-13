@@ -722,9 +722,10 @@
             return true;
         }
 
-        function populateStudentPrintFile() {
-            const applicationNumber = generateApplicationNumber();
-
+        function populateStudentPrintFile(serverApplicationNumber) {
+    const applicationNumber =
+        serverApplicationNumber || generateApplicationNumber();
+           
             setPrintValue("printApplicationNo", applicationNumber);
             setPrintValue(
                 "printApplicationDate",
@@ -771,63 +772,123 @@
             return applicationNumber;
         }
 
-        if (admissionForm) {
-            admissionForm.addEventListener("submit", function (event) {
-                event.preventDefault();
+        
+if (admissionForm) {
+    admissionForm.addEventListener("submit", async function (event) {
+        event.preventDefault();
 
-                if (!validateAdmissionForm()) {
-                    return;
-                }
+        if (!validateAdmissionForm()) {
+            return;
+        }
 
-                const submitButton = admissionForm.querySelector(
-                    'button[type="submit"], input[type="submit"]'
+        const submitButton = admissionForm.querySelector(
+            'button[type="submit"], input[type="submit"]'
+        );
+
+        const originalText = submitButton
+            ? submitButton.innerHTML
+            : "";
+
+        if (submitButton) {
+            submitButton.disabled = true;
+            submitButton.textContent = "Submitting Application...";
+        }
+
+        try {
+            const client = window.schoolSupabase;
+
+            if (!client) {
+                throw new Error(
+                    "Supabase is not configured. Please try again later."
                 );
+            }
 
-                const originalText = submitButton
-                    ? submitButton.innerHTML
-                    : "";
+            // Sign in anonymously to obtain an authenticated session.
+            const { data: authData, error: authError } =
+                await client.auth.signInAnonymously();
 
-                if (submitButton) {
-                    submitButton.disabled = true;
-                    submitButton.innerHTML =
-                        '<span class="spinner"></span> Preparing Student File...';
+            if (authError || !authData.session) {
+                throw new Error(
+                    authError?.message ||
+                    "Could not start a secure application session."
+                );
+            }
+
+            // Submit the application and photo to your Edge Function.
+            const { data, error } = await client.functions.invoke(
+                "submit-admission",
+                {
+                    body: {
+                        full_name: valueOf("studentName"),
+                        guardian_name: valueOf("guardianName"),
+                        class_applied: valueOf("classApply"),
+                        phone: valueOf("studentPhone"),
+                        photo_data_url: uploadedStudentPhoto
+                    }
                 }
+            );
 
-                try {
-                    const applicationNumber = populateStudentPrintFile();
+            if (error) {
+                console.error("Supabase submission error:", error);
+                throw new Error(
+                    "The application could not be saved. Please try again."
+                );
+            }
 
-                    // Store the generated number in the official-use field.
-                    const applicationField = document.getElementById("applicationNo");
-                    if (applicationField) {
-                        applicationField.value = applicationNumber;
-                    }
+            if (
+                !data ||
+                data.success !== true ||
+                !data.application_number
+            ) {
+                throw new Error(
+                    data?.message ||
+                    "The server did not confirm the application."
+                );
+            }
 
-                    window.showNotification(
-                        "Application Ready",
-                        "Your student file is ready. Select 'Save as PDF' in the print window.",
-                        "success"
-                    );
+            // Populate the printable file with the server's application number.
+            const applicationNumber = data.application_number;
+            populateStudentPrintFile(applicationNumber);
 
-                    // Close modal before printing for a clean A4 print.
-                    closeAdmissionModal();
+            const applicationField =
+                document.getElementById("applicationNo");
 
-                    window.setTimeout(function () {
-                        window.print();
-                    }, 350);
+            if (applicationField) {
+                applicationField.value = applicationNumber;
+            }
 
-                } catch (error) {
-                    console.error("Admission form error:", error);
+            window.showNotification(
+                "Application Saved",
+                "Your application was saved successfully. You can now print or save the student file as PDF.",
+                "success"
+            );
 
-                    window.showNotification(
-                        "Error",
-                        "Something went wrong while preparing the student file.",
-                        "error"
-                    );
-                } finally {
-                    if (submitButton) {
-                        submitButton.disabled = false;
-                        submitButton.innerHTML = originalText;
-                    }
+            closeAdmissionModal();
+
+            // Print only after the server confirms that saving succeeded.
+            window.setTimeout(function () {
+                window.print();
+            }, 500);
+
+        } catch (error) {
+            console.error("Admission form error:", error);
+
+            window.showNotification(
+                "Submission Failed",
+                error.message ||
+                    "Your application could not be saved. Please try again.",
+                "error"
+            );
+
+        } finally {
+            if (submitButton) {
+                submitButton.disabled = false;
+                submitButton.innerHTML = originalText;
+            }
+        }
+    });
+}
+
                 }
             });
         }
