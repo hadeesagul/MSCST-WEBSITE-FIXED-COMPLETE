@@ -1084,7 +1084,7 @@ p {
     position: relative;
     color: white;
     background:
-        url("image.com/image..1.jpg")
+        url("images.com/image..1.jpg")
         center / cover fixed;
 }
 
