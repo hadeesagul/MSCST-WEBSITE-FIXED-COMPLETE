@@ -848,7 +848,7 @@ if (admissionForm) {
 
             // Populate the printable file with the server's application number.
             const applicationNumber = data.application_number;
-            populateStudentPrintFile(applicationNumber);
+            populateStudentPrintFile(applicationNumber, formValues);
 
             const applicationField =
                 document.getElementById("applicationNo");
