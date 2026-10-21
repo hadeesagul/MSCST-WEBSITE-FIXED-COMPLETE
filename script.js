@@ -924,7 +924,42 @@ window.setTimeout(function () {
         return;
     }
 
-    window.print();
+   
+setTimeout(() => {
+    const printContainer = document.getElementById("studentPrintContainer");
+
+    if (!printContainer) {
+        console.error("Student print container was not found.");
+        return;
+    }
+
+    // Remember the original location so it can be restored.
+    const originalParent = printContainer.parentNode;
+    const originalNextSibling = printContainer.nextSibling;
+
+    // Move the printable file outside the admission modal.
+    document.body.appendChild(printContainer);
+    printContainer.style.display = "block";
+
+    // Allow the browser to update the layout before printing.
+    requestAnimationFrame(() => {
+        window.print();
+    });
+
+    // Restore the original location after the print dialog closes.
+    window.addEventListener("afterprint", function restorePrintContainer() {
+        window.removeEventListener("afterprint", restorePrintContainer);
+
+        if (originalParent) {
+            if (originalNextSibling && originalNextSibling.parentNode === originalParent) {
+                originalParent.insertBefore(printContainer, originalNextSibling);
+            } else {
+                originalParent.appendChild(printContainer);
+            }
+        }
+
+        printContainer.style.removeProperty("display");
+    });
 }, 500);
 
                 } catch (error) {
