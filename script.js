@@ -898,10 +898,34 @@
 
                     closeAdmissionModal();
 
-                    // Print only after the server confirms successful saving.
-                    window.setTimeout(function () {
-                        window.print();
-                    }, 500);
+                    // Print the student admission file after successful saving.
+window.setTimeout(function () {
+    const printContainer = document.getElementById(
+        "studentPrintContainer"
+    );
+
+    if (!printContainer) {
+        console.error(
+            "Print error: studentPrintContainer was not found."
+        );
+
+        window.showNotification(
+            "Print Error",
+            "The student admission file could not be found.",
+            "error"
+        );
+
+        return;
+    }
+
+    // Update the printable fields before opening the print dialog.
+    if (!document.getElementById("printStudentName")) {
+        console.error("Printable student name field was not found.");
+        return;
+    }
+
+    window.print();
+}, 500);
 
                 } catch (error) {
                     console.error("Admission form error:", error);
