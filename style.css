@@ -2606,6 +2606,11 @@ p {
    A4 PRINT DESIGN — STUDENT ADMISSION FILE ONLY
 ===================================================== */
 @media print {
+   
+/* =====================================================
+   A4 PRINT DESIGN — STUDENT ADMISSION FILE ONLY
+===================================================== */
+@media print {
     @page {
         size: A4 portrait;
         margin: 12mm;
@@ -2620,14 +2625,23 @@ p {
         background: #ffffff !important;
     }
 
-    /* Hide normal website elements without changing screen styling. */
-    body > *:not(#studentPrintContainer) {
-        display: none !important;
+    /* Hide the website visually, but don't hide parent wrappers. */
+    body * {
+        visibility: hidden !important;
+    }
+
+    #studentPrintContainer,
+    #studentPrintContainer * {
+        visibility: visible !important;
+        color: #000000 !important;
+        box-sizing: border-box !important;
     }
 
     #studentPrintContainer {
         display: block !important;
-        position: static !important;
+        position: fixed !important;
+        top: 0 !important;
+        left: 0 !important;
         width: 100% !important;
         max-width: 100% !important;
         height: auto !important;
@@ -2635,18 +2649,21 @@ p {
         margin: 0 !important;
         padding: 0 !important;
         overflow: visible !important;
-        visibility: visible !important;
         background: #ffffff !important;
-        color: #000000 !important;
         font-size: 10pt !important;
-        box-sizing: border-box !important;
     }
 
-    #studentPrintContainer,
-    #studentPrintContainer * {
+    #studentPrintContainer .print-student-details,
+    #studentPrintContainer .print-fields-grid {
+        display: grid !important;
         visibility: visible !important;
-        box-sizing: border-box !important;
-        color: #000000;
+    }
+
+    #studentPrintContainer .print-field,
+    #studentPrintContainer .print-field strong,
+    #studentPrintContainer .print-field span {
+        visibility: visible !important;
+        color: #000000 !important;
     }
 
     #studentPrintContainer img {
@@ -2657,7 +2674,8 @@ p {
     #studentPrintContainer .print-student-top,
     #studentPrintContainer .print-application-info,
     #studentPrintContainer .print-fields-grid,
-    #studentPrintContainer .print-signatures {
+    #studentPrintContainer .print-signatures,
+    #studentPrintContainer .print-footer {
         break-inside: avoid !important;
         page-break-inside: avoid !important;
     }
@@ -2677,12 +2695,8 @@ p {
         max-height: 35mm !important;
         object-fit: cover !important;
     }
-
-    #studentPrintContainer .print-footer {
-        break-inside: avoid !important;
-        page-break-inside: avoid !important;
-    }
 }
+
 
 /* =====================================================
    FORM SECTION HEADINGS
