@@ -352,8 +352,6 @@
                 showLightbox(lightboxIndex + 1);
             });
         }
-
-
         /* =====================================================
            TESTIMONIAL SLIDER
         ===================================================== */
@@ -658,8 +656,6 @@
                 reader.readAsDataURL(file);
             });
         }
-
-
         /* =====================================================
            ADMISSION FORM -> PRINTABLE STUDENT FILE
         ===================================================== */
@@ -722,11 +718,22 @@
             return true;
         }
 
-        function populateStudentPrintFile(serverApplicationNumber) {
-    const applicationNumber =
-        serverApplicationNumber || generateApplicationNumber();
-           
+        function populateStudentPrintFile(serverApplicationNumber, formValues = {}) {
+            const applicationNumber =
+                serverApplicationNumber || generateApplicationNumber();
+
+            // Use values captured before the server request. For fields
+            // outside the admission form, use their current DOM values.
+            function fieldValue(id) {
+                if (Object.prototype.hasOwnProperty.call(formValues, id)) {
+                    return String(formValues[id] ?? "").trim();
+                }
+
+                return valueOf(id);
+            }
+
             setPrintValue("printApplicationNo", applicationNumber);
+
             setPrintValue(
                 "printApplicationDate",
                 new Date().toLocaleDateString("en-PK", {
@@ -735,160 +742,186 @@
                     year: "numeric"
                 })
             );
+
             setPrintValue(
                 "printAdmissionStatus",
-                valueOf("admissionStatus") || "Pending"
+                fieldValue("admissionStatus") || "Pending"
             );
 
-            setPrintValue("printStudentName", valueOf("studentName"));
-            setPrintValue("printGuardianName", valueOf("guardianName"));
-            setPrintValue("printDob", formatDate(valueOf("dob")));
-            setPrintValue("printGender", valueOf("gender"));
-            setPrintValue("printClassApply", valueOf("classApply"));
-            setPrintValue("printPreviousSchool", valueOf("previousSchool"));
-            setPrintValue("printPreviousClass", valueOf("previousClass"));
-            setPrintValue("printPreviousResult", valueOf("previousResult"));
+            setPrintValue("printStudentName", fieldValue("studentName"));
+            setPrintValue("printGuardianName", fieldValue("guardianName"));
+            setPrintValue("printDob", formatDate(fieldValue("dob")));
+            setPrintValue("printGender", fieldValue("gender"));
+            setPrintValue("printClassApply", fieldValue("classApply"));
+            setPrintValue("printPreviousSchool", fieldValue("previousSchool"));
+            setPrintValue("printPreviousClass", fieldValue("previousClass"));
+            setPrintValue("printPreviousResult", fieldValue("previousResult"));
 
-            setPrintValue("printPhone", valueOf("studentPhone"));
-            setPrintValue("printEmail", valueOf("studentEmail"));
-            setPrintValue("printAddress", valueOf("studentAddress"));
-            setPrintValue("printAdditionalInfo", valueOf("additionalInfo"));
+            setPrintValue("printPhone", fieldValue("studentPhone"));
+            setPrintValue("printEmail", fieldValue("studentEmail"));
+            setPrintValue("printAddress", fieldValue("studentAddress"));
+            setPrintValue("printAdditionalInfo", fieldValue("additionalInfo"));
 
-            setPrintValue("printRegistrationNo", valueOf("registrationNo"));
-            setPrintValue("printDateReceived", formatDate(valueOf("dateReceived")));
-            setPrintValue("printClassAllotted", valueOf("classAllotted"));
-            setPrintValue("printSectionAllotted", valueOf("sectionAllotted"));
-            setPrintValue("printRollNumber", valueOf("rollNumber"));
-            setPrintValue("printFeeStatus", valueOf("feeStatus"));
-            setPrintValue("printOfficialRemarks", valueOf("officialRemarks"));
-            setPrintValue("printAdmissionOfficer", valueOf("admissionOfficer"));
-            setPrintValue("printAuthorizedSignature", valueOf("authorizedSignature"));
+            setPrintValue("printRegistrationNo", fieldValue("registrationNo"));
+            setPrintValue("printDateReceived", formatDate(fieldValue("dateReceived")));
+            setPrintValue("printClassAllotted", fieldValue("classAllotted"));
+            setPrintValue("printSectionAllotted", fieldValue("sectionAllotted"));
+            setPrintValue("printRollNumber", fieldValue("rollNumber"));
+            setPrintValue("printFeeStatus", fieldValue("feeStatus"));
+            setPrintValue("printOfficialRemarks", fieldValue("officialRemarks"));
+            setPrintValue("printAdmissionOfficer", fieldValue("admissionOfficer"));
+            setPrintValue("printAuthorizedSignature", fieldValue("authorizedSignature"));
 
             if (printStudentPhoto && uploadedStudentPhoto) {
                 printStudentPhoto.src = uploadedStudentPhoto;
                 printStudentPhoto.style.display = "block";
             }
 
+            // Warn in DevTools if important printable HTML IDs do not exist.
+            [
+                "printStudentName",
+                "printGuardianName",
+                "printClassApply",
+                "printPhone",
+                "printApplicationNo"
+            ].forEach(function (id) {
+                if (!document.getElementById(id)) {
+                    console.warn("Printable admission field ID not found:", id);
+                }
+            });
+
             return applicationNumber;
         }
 
-        
-if (admissionForm) {
-    admissionForm.addEventListener("submit", async function (event) {
-        event.preventDefault();
+        if (admissionForm) {
+            admissionForm.addEventListener("submit", async function (event) {
+                event.preventDefault();
 
-        if (!validateAdmissionForm()) {
-            return;
-        }
+                if (!validateAdmissionForm()) {
+                    return;
+                }
 
-        const submitButton = admissionForm.querySelector(
-            'button[type="submit"], input[type="submit"]'
-        );
+                // IMPORTANT: Capture the entered values before the
+                // asynchronous Supabase request starts.
+                const formValues = {};
 
-        const originalText = submitButton
-            ? submitButton.innerHTML
-            : "";
+                admissionForm.querySelectorAll(
+                    "input[id], select[id], textarea[id]"
+                ).forEach(function (field) {
+                    formValues[field.id] = field.value;
+                });
 
-        if (submitButton) {
-            submitButton.disabled = true;
-            submitButton.textContent = "Submitting Application...";
-        }
-
-        try {
-            const client = window.schoolSupabase;
-
-            if (!client) {
-                throw new Error(
-                    "Supabase is not configured. Please try again later."
+                const submitButton = admissionForm.querySelector(
+                    'button[type="submit"], input[type="submit"]'
                 );
-            }
 
-            // Sign in anonymously to obtain an authenticated session.
-            const { data: authData, error: authError } =
-                await client.auth.signInAnonymously();
+                const originalText = submitButton
+                    ? submitButton.innerHTML
+                    : "";
 
-            if (authError || !authData.session) {
-                throw new Error(
-                    authError?.message ||
-                    "Could not start a secure application session."
-                );
-            }
+                if (submitButton) {
+                    submitButton.disabled = true;
+                    submitButton.textContent = "Submitting Application...";
+                }
 
-            // Submit the application and photo to your Edge Function.
-            const { data, error } = await client.functions.invoke(
-                "submit-admission",
-                {
-                    body: {
-                        full_name: valueOf("studentName"),
-                        guardian_name: valueOf("guardianName"),
-                        class_applied: valueOf("classApply"),
-                        phone: valueOf("studentPhone"),
-                        photo_data_url: uploadedStudentPhoto
+                try {
+                    const client = window.schoolSupabase;
+
+                    if (!client) {
+                        throw new Error(
+                            "Supabase is not configured. Please try again later."
+                        );
+                    }
+
+                    // Sign in anonymously to obtain an authenticated session.
+                    const { data: authData, error: authError } =
+                        await client.auth.signInAnonymously();
+
+                    if (authError || !authData.session) {
+                        throw new Error(
+                            authError?.message ||
+                            "Could not start a secure application session."
+                        );
+                    }
+
+                    // Submit the application and photo to your Edge Function.
+                    const { data, error } = await client.functions.invoke(
+                        "submit-admission",
+                        {
+                            body: {
+                                full_name: valueOf("studentName"),
+                                guardian_name: valueOf("guardianName"),
+                                class_applied: valueOf("classApply"),
+                                phone: valueOf("studentPhone"),
+                                photo_data_url: uploadedStudentPhoto
+                            }
+                        }
+                    );
+
+                    if (error) {
+                        console.error("Supabase submission error:", error);
+
+                        throw new Error(
+                            "The application could not be saved. Please try again."
+                        );
+                    }
+
+                    if (
+                        !data ||
+                        data.success !== true ||
+                        !data.application_number
+                    ) {
+                        throw new Error(
+                            data?.message ||
+                            "The server did not confirm the application."
+                        );
+                    }
+
+                    // Populate the printable file using the server's
+                    // application number and the saved form-value snapshot.
+                    const applicationNumber = data.application_number;
+
+                    populateStudentPrintFile(applicationNumber, formValues);
+
+                    const applicationField =
+                        document.getElementById("applicationNo");
+
+                    if (applicationField) {
+                        applicationField.value = applicationNumber;
+                    }
+
+                    window.showNotification(
+                        "Application Saved",
+                        "Your application was saved successfully. You can now print or save the student file as PDF.",
+                        "success"
+                    );
+
+                    closeAdmissionModal();
+
+                    // Print only after the server confirms successful saving.
+                    window.setTimeout(function () {
+                        window.print();
+                    }, 500);
+
+                } catch (error) {
+                    console.error("Admission form error:", error);
+
+                    window.showNotification(
+                        "Submission Failed",
+                        error.message ||
+                            "Your application could not be saved. Please try again.",
+                        "error"
+                    );
+
+                } finally {
+                    if (submitButton) {
+                        submitButton.disabled = false;
+                        submitButton.innerHTML = originalText;
                     }
                 }
-            );
-
-            if (error) {
-                console.error("Supabase submission error:", error);
-                throw new Error(
-                    "The application could not be saved. Please try again."
-                );
-            }
-
-            if (
-                !data ||
-                data.success !== true ||
-                !data.application_number
-            ) {
-                throw new Error(
-                    data?.message ||
-                    "The server did not confirm the application."
-                );
-            }
-
-            // Populate the printable file with the server's application number.
-            const applicationNumber = data.application_number;
-            populateStudentPrintFile(applicationNumber, formValues);
-
-            const applicationField =
-                document.getElementById("applicationNo");
-
-            if (applicationField) {
-                applicationField.value = applicationNumber;
-            }
-
-            window.showNotification(
-                "Application Saved",
-                "Your application was saved successfully. You can now print or save the student file as PDF.",
-                "success"
-            );
-
-            closeAdmissionModal();
-
-            // Print only after the server confirms that saving succeeded.
-            window.setTimeout(function () {
-                window.print();
-            }, 500);
-
-        } catch (error) {
-            console.error("Admission form error:", error);
-
-            window.showNotification(
-                "Submission Failed",
-                error.message ||
-                    "Your application could not be saved. Please try again.",
-                "error"
-            );
-
-       
-        } finally {
-            if (submitButton) {
-                submitButton.disabled = false;
-                submitButton.innerHTML = originalText;
-            }
+            });
         }
-    });
-}
+
 
         /* =====================================================
            BACK TO TOP
