@@ -919,48 +919,82 @@ window.setTimeout(function () {
     }
 
     // Update the printable fields before opening the print dialog.
-    if (!document.getElementById("printStudentName")) {
-        console.error("Printable student name field was not found.");
-        return;
-    }
+  
+                    // Print the student admission file after successful saving.
+                    window.setTimeout(function () {
+                        const printContainer = document.getElementById(
+                            "studentPrintContainer"
+                        );
 
-   
-setTimeout(() => {
-    const printContainer = document.getElementById("studentPrintContainer");
+                        if (!printContainer) {
+                            console.error(
+                                "Print error: studentPrintContainer was not found."
+                            );
+                            window.showNotification(
+                                "Print Error",
+                                "The student admission file could not be found.",
+                                "error"
+                            );
+                            return;
+                        }
 
-    if (!printContainer) {
-        console.error("Student print container was not found.");
-        return;
-    }
+                        if (!document.getElementById("printStudentName")) {
+                            console.error(
+                                "Printable student name field was not found."
+                            );
+                            return;
+                        }
 
-    // Remember the original location so it can be restored.
-    const originalParent = printContainer.parentNode;
-    const originalNextSibling = printContainer.nextSibling;
+                        // Preserve the original DOM position and inline styles.
+                        const originalParent = printContainer.parentNode;
+                        const originalNextSibling = printContainer.nextSibling;
+                        const originalDisplay = printContainer.style.display;
 
-    // Move the printable file outside the admission modal.
-    document.body.appendChild(printContainer);
-    printContainer.style.display = "block";
+                        // Move it outside any hidden modal or wrapper.
+                        document.body.appendChild(printContainer);
+                        printContainer.style.setProperty(
+                            "display",
+                            "block",
+                            "important"
+                        );
 
-    // Allow the browser to update the layout before printing.
-    requestAnimationFrame(() => {
-        window.print();
-    });
+                        let restored = false;
 
-    // Restore the original location after the print dialog closes.
-    window.addEventListener("afterprint", function restorePrintContainer() {
-        window.removeEventListener("afterprint", restorePrintContainer);
+                        function restorePrintContainer() {
+                            if (restored) return;
+                            restored = true;
 
-        if (originalParent) {
-            if (originalNextSibling && originalNextSibling.parentNode === originalParent) {
-                originalParent.insertBefore(printContainer, originalNextSibling);
-            } else {
-                originalParent.appendChild(printContainer);
-            }
-        }
+                            if (originalParent) {
+                                if (
+                                    originalNextSibling &&
+                                    originalNextSibling.parentNode === originalParent
+                                ) {
+                                    originalParent.insertBefore(
+                                        printContainer,
+                                        originalNextSibling
+                                    );
+                                } else {
+                                    originalParent.appendChild(printContainer);
+                                }
+                            }
 
-        printContainer.style.removeProperty("display");
-    });
-}, 500);
+                            printContainer.style.display = originalDisplay;
+                        }
+
+                        window.addEventListener(
+                            "afterprint",
+                            restorePrintContainer,
+                            { once: true }
+                        );
+
+                        // Allow layout and images to update before printing.
+                        requestAnimationFrame(function () {
+                            requestAnimationFrame(function () {
+                                window.print();
+                            });
+                        });
+                    }, 500);
+
 
                 } catch (error) {
                     console.error("Admission form error:", error);
