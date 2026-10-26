@@ -2602,14 +2602,82 @@ p {
         transition-duration: 0.01ms !important;
     }
 }
-/* =====================================================
-   A4 PRINT DESIGN — STUDENT ADMISSION FILE ONLY
-===================================================== */
-@media print {
+
    
 /* =====================================================
    A4 PRINT DESIGN — STUDENT ADMISSION FILE ONLY
 ===================================================== */
+
+/* Screen: keep the print-only file hidden. */
+.student-print-container {
+    display: none;
+}
+
+/* Print only the student admission file. */
+@media print {
+    @page {
+        size: A4 portrait;
+        margin: 12mm;
+    }
+
+    html,
+    body {
+        margin: 0 !important;
+        padding: 0 !important;
+        background: #fff !important;
+    }
+
+    body * {
+        visibility: hidden !important;
+    }
+
+    #studentPrintContainer,
+    #studentPrintContainer * {
+        visibility: visible !important;
+        box-sizing: border-box !important;
+        color: #000 !important;
+    }
+
+    #studentPrintContainer {
+        display: block !important;
+        position: absolute !important;
+        top: 0 !important;
+        left: 0 !important;
+        width: 100% !important;
+        height: auto !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        overflow: visible !important;
+        background: #fff !important;
+        font-size: 10pt !important;
+    }
+
+    #studentPrintContainer img {
+        max-width: 100% !important;
+    }
+
+    #studentPrintContainer .print-header,
+    #studentPrintContainer .print-student-top,
+    #studentPrintContainer .print-application-info,
+    #studentPrintContainer .print-fields-grid,
+    #studentPrintContainer .print-signatures,
+    #studentPrintContainer .print-footer {
+        break-inside: avoid !important;
+        page-break-inside: avoid !important;
+    }
+
+    #studentPrintContainer .print-field {
+        overflow-wrap: anywhere !important;
+    }
+
+    #studentPrintContainer #printStudentPhoto {
+        width: 28mm !important;
+        max-width: 28mm !important;
+        max-height: 35mm !important;
+        object-fit: cover !important;
+    }
+}
+
 @media print {
     @page {
         size: A4 portrait;
