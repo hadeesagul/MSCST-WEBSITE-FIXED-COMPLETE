@@ -899,28 +899,6 @@
                     closeAdmissionModal();
 
                     // Print the student admission file after successful saving.
-window.setTimeout(function () {
-    const printContainer = document.getElementById(
-        "studentPrintContainer"
-    );
-
-    if (!printContainer) {
-        console.error(
-            "Print error: studentPrintContainer was not found."
-        );
-
-        window.showNotification(
-            "Print Error",
-            "The student admission file could not be found.",
-            "error"
-        );
-
-        return;
-    }
-
-    // Update the printable fields before opening the print dialog.
-  
-                    // Print the student admission file after successful saving.
                     window.setTimeout(function () {
                         const printContainer = document.getElementById(
                             "studentPrintContainer"
